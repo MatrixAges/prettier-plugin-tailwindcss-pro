@@ -329,7 +329,20 @@ let tests: PluginTest[] = [
           '<div styles="p-0 sm:p-0" classes="p-0 sm:p-0" other="sm:p-0 p-0"></div>',
         ],
 
-        [`{<div class="p-20 bg-red-100 w-full"></div>}`, `{(<div class="w-full bg-red-100 p-20" />)}`],
+        [
+          `{<div class="p-20 bg-red-100 w-full"></div>}`,
+          `{
+  (
+    <div
+      class={\`
+w-full
+p-20
+bg-red-100
+\`}
+    />
+  )
+}`,
+        ],
         [
           `<style>
   h1 {
@@ -358,8 +371,14 @@ import Custom from '../components/Custom.astro'
         t`<div>
   <span class:list={[\`${yes}\`, \`\${'${yes}'}\`, \`\${\`${yes}\`}\`, \`\${\`\${'${yes}'}\`}\`]}></span>
 </div>`,
-        t`<MyReactComponent className="${yes}" />`,
-        t`<MyReactComponent className={'${yes}'} />`,
+        [
+          `<MyReactComponent className="sm:p-0 p-0" />`,
+          `<MyReactComponent className="p-0 sm:p-0" />`,
+        ],
+        [
+          `<MyReactComponent className={'sm:p-0 p-0'} />`,
+          `<MyReactComponent className={'p-0 sm:p-0'} />`,
+        ],
 
         [`<div class=" sm:flex   underline  block"></div>`, `<div class="block underline sm:flex"></div>`],
         [

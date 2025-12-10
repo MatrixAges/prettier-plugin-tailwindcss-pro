@@ -28,4 +28,12 @@ const y = no.tw(Foo)`sm:p-1 p-2`;
 const z = no(Foo).tw`sm:p-1 p-2`;
 
 const A = (props) => <div className={props.sortMe} />;
-const B = () => <A sortMe="p-2 sm:p-1" dontSort="sm:p-1 p-2" />;
+const B = () => (
+  <A
+    sortMe={`
+p-2
+sm:p-1
+`}
+    dontSort="sm:p-1 p-2"
+  />
+);
