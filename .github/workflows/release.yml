@@ -54,3 +54,5 @@ jobs:
 
       - name: Publish
         run: npm publish --provenance --access public --tag ${{ env.RELEASE_CHANNEL }}
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
