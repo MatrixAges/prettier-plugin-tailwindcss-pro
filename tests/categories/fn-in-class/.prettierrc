@@ -2,6 +2,5 @@
   "useTailwindFormat": true,
   "tabWidth": 6,
   "semi": false,
-  "useTailwindFormatCategories": "./tailwind-format-categories.json",
   "plugins": ["../../../dist/index.mjs"]
 }

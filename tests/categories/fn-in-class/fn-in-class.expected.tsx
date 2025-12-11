@@ -7,13 +7,17 @@ function Component() {
                         primary-color
                         large-size
                         hover-effect shadow-md
-                        rounded-lg p-4 m-2
+                        p-4
+                        m-2
+                        rounded-lg
                   ",
                         "
-                        rounded-lg p-4 m-2
                         flex
                         items-center justify-between
                         w-full h-64
+                        p-4
+                        m-2
+                        rounded-lg
                         text-xl font-bold
                         bg-blue-500
                         from-blue-500
