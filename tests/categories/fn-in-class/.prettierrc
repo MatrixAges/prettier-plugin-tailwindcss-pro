@@ -1,7 +1,0 @@
-{
-  "useTailwindFormat": true,
-  "tabWidth": 6,
-  "semi": false,
-  "trailingComma": "none",
-  "plugins": ["../../../dist/index.mjs"]
-}
