@@ -1,3 +1,5 @@
-git tag v0.1.5
-
-git push origin v0.1.5
+git add .
+git commit -m "chore: release v0.1.6"
+git tag v0.1.6
+git push
+git push origin v0.1.6
