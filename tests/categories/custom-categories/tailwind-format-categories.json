@@ -1,0 +1,7 @@
+{
+  "CustomButtons": "custom-btn",
+  "Colors": "primary-color secondary-color",
+  "Sizes": "large-size small-size",
+  "Effects": "hover-effect shadow-md",
+  "DefaultTailwind": "rounded-lg p- m-"
+}

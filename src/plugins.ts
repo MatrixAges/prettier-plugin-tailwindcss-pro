@@ -8,6 +8,7 @@ import * as prettierParserHTML from 'prettier/plugins/html'
 import * as prettierParserMeriyah from 'prettier/plugins/meriyah'
 import * as prettierParserPostCSS from 'prettier/plugins/postcss'
 import * as prettierParserTypescript from 'prettier/plugins/typescript'
+import * as prettierPrinterEstree from 'prettier/plugins/estree'
 import { loadIfExists, maybeResolve } from './resolve'
 
 interface PluginDetails {
@@ -125,7 +126,7 @@ async function loadBuiltinPlugins(): Promise<PluginDetails> {
       __js_expression: prettierParserBabel.parsers.__js_expression,
     },
     printers: {
-      //
+      ...prettierPrinterEstree.printers,
     },
   }
 }

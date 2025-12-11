@@ -66,6 +66,12 @@ export const options: Record<string, SupportOption> = {
     category: 'Tailwind CSS',
     description: 'Enable custom Tailwind formatting behavior',
   },
+
+  useTailwindFormatCategories: {
+    type: 'string',
+    category: 'Tailwind CSS',
+    description: 'Path to a JSON file containing custom categories for Tailwind class grouping when useTailwindFormat is enabled',
+  },
 }
 
 export interface Matcher {
