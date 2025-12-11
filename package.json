@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "prettier-plugin-tailwindcss-pro",
-  "version": "0.1.13",
+  "version": "0.1.14",
   "description": "A Prettier plugin for grouping Tailwind CSS classes.",
   "license": "MIT",
   "main": "dist/index.mjs",
@@ -17,7 +17,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/matrixages/prettier-plugin-tailwindcss-pro"
+    "url": "https://github.com/MatrixAges/prettier-plugin-tailwindcss-pro"
   },
   "bugs": {
     "url": "https://github.com/matrixages/prettier-plugin-tailwindcss-pro/issues"
