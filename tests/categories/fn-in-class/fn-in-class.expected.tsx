@@ -3,13 +3,11 @@ function Component() {
             <div
                   className={cx(
                         "
-                        custom-btn
-                        primary-color
-                        large-size
-                        hover-effect shadow-md
                         p-4
                         m-2
                         rounded-lg
+                        shadow-md
+                        custom-btn primary-color large-size hover-effect
                   ",
                         "
                         flex
