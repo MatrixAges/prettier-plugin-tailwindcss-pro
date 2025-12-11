@@ -22,7 +22,7 @@ function Component() {
                         border-2
                         shadow-lg
                         opacity-75
-                  ",
+                  "
                   )}
             >
                   Custom Categories Content

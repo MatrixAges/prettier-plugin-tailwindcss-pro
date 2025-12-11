@@ -87,11 +87,8 @@ describe('useTailwindFormat', () => {
       tabWidth: 6,
       printWidth: 80,
       singleQuote: false,
+      trailingComma: 'none',
     })
-
-    console.log('----------')
-    console.log(result)
-    console.log('----------')
 
     expect(result).toEqual(expected.trim())
   })
