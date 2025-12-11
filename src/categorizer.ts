@@ -45,8 +45,10 @@ export function categorizeTailwindClasses(
     phases.push(customCategories)
   }
   
-  // Phase 2: Default Categories
-  phases.push(defaultCategories)
+  // Phase 2: Default Categories (only if no custom categories provided)
+  if (!customCategories) {
+    phases.push(defaultCategories)
+  }
 
   let currentLeftovers = [...classList]
   const allBlocks: CategoryBlock[] = []
@@ -65,13 +67,11 @@ export function categorizeTailwindClasses(
   }
 
   // Handle Uncategorized
-  // Treat each uncategorized class as its own block/group to allow granular sorting if needed
-  // Or handle them as one "Uncategorized" block?
-  // Let's create one block for "Uncategorized" containing single-item groups
+  // Put all uncategorized classes in a single group so they stay together
   if (currentLeftovers.length > 0) {
     allBlocks.push({
       name: 'Uncategorized',
-      groups: currentLeftovers.map(c => [c])
+      groups: [currentLeftovers]
     })
   }
 
