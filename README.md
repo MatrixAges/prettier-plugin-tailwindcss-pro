@@ -1,13 +1,219 @@
-<img src="https://raw.githubusercontent.com/tailwindlabs/prettier-plugin-tailwindcss/main/.github/banner.jpg" alt="prettier-plugin-tailwindcss" />
+# prettier-plugin-tailwindcss-pro
 
-A [Prettier v3+](https://prettier.io/) plugin for Tailwind CSS v3.0+ that automatically sorts classes based on [our recommended class order](https://tailwindcss.com/blog/automatic-class-sorting-with-prettier#how-classes-are-sorted).
+A clean format prettier plugin that groups tailwindcss classes.
+
+And it forks from [prettier-plugin-tailwindcss](https://github.com/tailwindlabs/prettier-plugin-tailwindcss).
+
+Before:
+```tsx
+function Component() {
+  return (
+    <div className="shadow-lg opacity-75 border-2 rounded-lg text-xl font-bold bg-blue-500 from-blue-500 p-4 m-2 w-full h-64 flex items-center justify-between">
+      Multi-category Content
+    </div>
+  )
+}
+```
+
+After:
+```tsx
+function Component() {
+      return (
+            <div
+                  className="
+                        flex
+                        items-center justify-between
+                        w-full h-64
+                        p-4
+                        m-2
+                        rounded-lg
+                        text-xl font-bold
+                        bg-blue-500
+                        from-blue-500
+                        border-2
+                        shadow-lg
+                        opacity-75
+                  "
+            >
+                  Multi-category Content
+            </div>
+      )
+}
+```
+
+## Features
+
+### custom categories
+
+tailwind-format-categories.json
+```json
+{
+  "CustomButtons": "custom-btn",
+  "Colors": "primary-color secondary-color",
+  "Sizes": "large-size small-size",
+  "Effects": "hover-effect shadow-md"
+}
+```
+
+Before:
+```tsx
+function Component() {
+  return (
+    <div className="custom-btn primary-color large-size hover-effect shadow-md rounded-lg p-4 m-2">
+      Custom Categories Content
+    </div>
+  )
+}
+```
+
+After:
+```tsx
+function Component() {
+      return (
+            <div
+                  className="
+                        custom-btn
+                        primary-color
+                        large-size
+                        hover-effect shadow-md
+                        rounded-lg p-4 m-2
+                  "
+            >
+                  Custom Categories Content
+            </div>
+      )
+}
+```
+
+### dynamic wrapping
+
+Before:
+```tsx
+function Component() {
+  return (
+    <div
+      className="opacity-0 opacity-5 opacity-10 opacity-20 opacity-25 opacity-30 opacity-40 opacity-50 opacity-60 opacity-70 opacity-75 opacity-80 opacity-90 opacity-95 opacity-100 transition-none transition-all transition-colors transition-opacity transition-shadow transition-transform ease-linear ease-in ease-out ease-in-out duration-75 duration-100 duration-150 duration-200 duration-300 duration-500 duration-700 duration-1000"
+    >
+      Dynamic wrapping test
+    </div>
+  )
+}
+```
+
+After:
+```tsx
+function Component() {
+      return (
+            <div
+                  className="
+                        opacity-0 opacity-5 opacity-10 opacity-20 opacity-25 opacity-30 opacity-40 opacity-50 opacity-60 opacity-70 opacity-75 opacity-80 opacity-90 opacity-95 opacity-100
+                        transition-none transition-all transition-colors transition-opacity transition-shadow transition-transform
+                        duration-75 duration-100 duration-150 duration-200 duration-300 duration-500 duration-700 duration-1000
+                        ease-linear ease-in ease-out ease-in-out
+                  "
+            >
+                  Dynamic wrapping test
+            </div>
+      )
+}
+```
+
+### utils function in className
+
+Before:
+```tsx
+function Component() {
+  return (
+    <div className={cx("custom-btn primary-color large-size hover-effect shadow-md rounded-lg p-4 m-2","shadow-lg opacity-75 border-2 rounded-lg text-xl font-bold bg-blue-500 from-blue-500 p-4 m-2 w-full h-64 flex items-center justify-between")}>
+      Custom Categories Content
+    </div>
+  )
+}
+```
+
+After:
+```tsx
+function Component() {
+      return (
+            <div
+                  className={cx(
+                        "
+                        p-4
+                        m-2
+                        rounded-lg
+                        shadow-md
+                        custom-btn primary-color large-size hover-effect
+                  ",
+                        "
+                        flex
+                        items-center justify-between
+                        w-full h-64
+                        p-4
+                        m-2
+                        rounded-lg
+                        text-xl font-bold
+                        bg-blue-500
+                        from-blue-500
+                        border-2
+                        shadow-lg
+                        opacity-75
+                  "
+                  )}
+            >
+                  Custom Categories Content
+            </div>
+      )
+}
+```
+
+### template string
+
+Before:
+```tsx
+function Component() {
+  const dynamicClass = ''
+  return (
+    <div className={`shadow-lg opacity-75 border-2 rounded-lg text-xl font-bold bg-blue-500 from-blue-500 p-4 m-2 w-full h-64 flex items-center justify-between ${dynamicClass}`}>
+      Multi-category Content
+    </div>
+  )
+}
+```
+
+After:
+```tsx
+function Component() {
+      const dynamicClass = ''
+      return (
+            <div
+                  className={`
+                        flex
+                        items-center justify-between
+                        w-full h-64
+                        p-4
+                        m-2
+                        rounded-lg
+                        text-xl font-bold
+                        bg-blue-500
+                        from-blue-500
+                        border-2
+                        shadow-lg
+                        opacity-75
+                        ${dynamicClass}
+                  `}
+            >
+                  Multi-category Content
+            </div>
+      )
+}
+```
 
 ## Installation
 
-To get started, install `prettier-plugin-tailwindcss` as a dev-dependency:
+To get started, install `prettier-plugin-tailwindcss-pro` as a dev-dependency:
 
 ```sh
-npm install -D prettier prettier-plugin-tailwindcss
+npm install -D prettier prettier-plugin-tailwindcss-pro
 ```
 
 Then add the plugin to your [Prettier configuration](https://prettier.io/docs/en/configuration.html):
@@ -15,7 +221,11 @@ Then add the plugin to your [Prettier configuration](https://prettier.io/docs/en
 ```json5
 // .prettierrc
 {
-  "plugins": ["prettier-plugin-tailwindcss"]
+  "useTailwindFormat": true,
+  "plugins": ["prettier-plugin-tailwindcss-pro"]
+
+// custom categories
+// "useTailwindFormatCategories": "tailwind-format-categories.json",
 }
 ```
 
@@ -26,13 +236,79 @@ When using a JavaScript config, you can import the types for IntelliSense:
 
 /** @type {import('prettier').Config & import('prettier-plugin-tailwindcss').PluginOptions} */
 export default {
-  plugins: ["prettier-plugin-tailwindcss"],
+  plugins: ["prettier-plugin-tailwindcss-pro"],
 }
 ```
 
-## Upgrading to v0.5.x
+## Default Categories
 
-As of v0.5.x, this plugin now requires Prettier v3 and is ESM-only. This means it cannot be loaded via `require()`. For more information see our [upgrade guide](https://github.com/tailwindlabs/prettier-plugin-tailwindcss/issues/207#issuecomment-1698071122).
+```ts
+const defaultCategories = {
+  Position: "relative absolute fixed sticky",
+  PositionSides: "inset- top- right- bottom-",
+  PositionSidesExt: "left- float- clear- isolate",
+  
+  Layout: "container block inline hidden",
+  LayoutDisplay: "visible contents table flow-root",
+  LayoutBox: "box- aspect- columns- break-",
+  LayoutOverflow: "overflow- overscroll- object- z-",
+  
+  Flexbox: "flex flex- shrink- grow-",
+  FlexUtils: "basis- order- wrap- flex-nowrap",
+  Grid: "grid grid- col- row-",
+  GridUtils: "auto- grid-flow- place- content-",
+  Alignment: "items- justify- self- justify-self-",
+  
+  Sizing: "w- h- size- max-w-",
+  SizingMinMax: "min-w- min-h- max-h- fit-",
+  
+  Spacing: "space- gap- divide-",
+  Padding: "p- px- py- pt-",
+  PaddingExt: "pb- pl- pr-",
+  Margin: "m- mx- my- mt-",
+  MarginExt: "mb- ml- mr-",
+  
+  Shape: "rounded rounded- circle- square-",
+  
+  Typography: "text- font- leading- tracking-",
+  TypographyStyle: "italic not-italic underline no-underline",
+  TypographyDecor: "decoration- underline-offset- uppercase lowercase",
+  TypographyLayout: "truncate break- whitespace- list-",
+  TypographyAlign: "align- text-left text-center text-right",
+  
+  Background: "bg- gradient- mix-blend- bg-blend-",
+  Gradients: "from- via- to-",
+  
+  Borders: "border border- outline- outline",
+  Rings: "ring ring- ring-offset- divide-",
+  
+  Shadow: "shadow- drop-shadow-",
+  
+  Effects: "opacity- filter- backdrop- blur-",
+  Filters: "brightness- contrast- grayscale- hue-rotate-",
+  FiltersExt: "invert- saturate- sepia-",
+  
+  Transforms: "transform- scale- rotate- translate-",
+  TransformsExt: "skew- origin- will-change- perspective-",
+  
+  Transitions: "transition- duration- ease- delay-",
+  Animation: "animate-",
+  
+  State: "group* peer* has-* data-*",
+  StateInteractive: "open: checked: disabled: visited:",
+  StateEmpty: "empty: read-only: required: valid:",
+  StateAria: "aria-*",
+
+  Action: "hover: active: focus: focus-",
+  ActionExt: "focus-within: focus-visible: target: selection:",
+  
+  Before: "before:",
+  After: "after:",
+  Dark: "dark:",
+  Media: "sm: md: lg: xl:",
+  MediaExt: "2xl: min-[ max-[ print:"
+} 
+```
 
 ## Options
 
@@ -273,7 +549,7 @@ One limitation with this approach is that `prettier-plugin-tailwindcss` *must* b
   "plugins": [
     "prettier-plugin-svelte",
     "prettier-plugin-organize-imports",
-    "prettier-plugin-tailwindcss" // MUST come last
+    "prettier-plugin-tailwindcss-pro" // MUST come last
   ]
 }
 ```

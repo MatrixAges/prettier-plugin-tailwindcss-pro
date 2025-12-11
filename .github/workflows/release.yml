@@ -25,7 +25,7 @@ jobs:
       - uses: actions/checkout@v3
 
       - name: Use Node.js ${{ env.NODE_VERSION }}
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           registry-url: "https://registry.npmjs.org"
@@ -54,5 +54,3 @@ jobs:
 
       - name: Publish
         run: npm publish --provenance --tag ${{ env.RELEASE_CHANNEL }}
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
