@@ -42,6 +42,9 @@ jobs:
       - name: Get release notes
         run: |
           RELEASE_NOTES=$(npm run release-notes --silent)
+          if [ -z "$RELEASE_NOTES" ]; then
+            RELEASE_NOTES="No release notes found."
+          fi
           echo "RELEASE_NOTES<<EOF" >> $GITHUB_ENV
           echo "$RELEASE_NOTES" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
