@@ -94,7 +94,14 @@ export function sortClasses(
     }
 
     // Categorize classes and return formatted string with indentation
-    return categorizeTailwindClasses(classes, env, indent, customCategories, tabWidth, closingIndent)
+    return categorizeTailwindClasses(
+      classes,
+      env,
+      indent,
+      customCategories,
+      tabWidth,
+      closingIndent
+    )
   }
 
   if (env.options.tailwindPreserveWhitespace) {

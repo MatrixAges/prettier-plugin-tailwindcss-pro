@@ -203,14 +203,8 @@ function transformDynamicJsAttribute(attr: any, env: TransformerEnv) {
           // @ts-ignore
           let quote = path.node.extra.raw[0]
           
-          // If the result spans multiple lines, we must use backticks to avoid syntax errors
-          // in JS expressions (except for JSX attributes which are handled separately).
-          if (typeof path.node.value === 'string' && path.node.value.includes('\n')) {
-            quote = '`'
-          }
-
           let value = jsesc(path.node.value, {
-            quotes: quote === '`' ? 'backtick' : (quote === "'" ? 'single' : 'double'),
+            quotes: quote === "'" ? 'single' : 'double',
           })
           // @ts-ignore
           path.node.value = new String(quote + value + quote)

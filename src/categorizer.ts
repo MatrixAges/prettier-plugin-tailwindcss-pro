@@ -6,6 +6,11 @@
 import { defaultCategories } from './defaults.js'
 import type { TransformerEnv } from './types'
 
+interface CategoryBlock {
+  name: string
+  groups: string[][] // groups of classes to be wrapped
+}
+
 /**
  * Categorizes Tailwind CSS classes based on the default categories configuration.
  * Supports wildcard prefixes (e.g., 'group*' matches 'group', 'group-', 'group/')
@@ -15,6 +20,8 @@ import type { TransformerEnv } from './types'
  * @param indent - Indentation string for each line
  * @param customCategories - Optional custom categories to override defaults
  * @param tabWidth - Tab width for calculating closing indentation
+ * @param closingIndent - Closing indentation string
+ * @param sorter - Optional function to sort a list of classes (used for sorting blocks)
  * @returns Formatted string with proper indentation
  */
 export function categorizeTailwindClasses(
@@ -23,22 +30,129 @@ export function categorizeTailwindClasses(
   indent: string = '  ',
   customCategories?: Record<string, string>,
   tabWidth: number = 2,
-  closingIndent?: string
+  closingIndent?: string,
+  sorter?: (classList: string[]) => string[]
 ): string {
   if (classList.length === 0) {
     return ''
   }
 
-  const categories = customCategories || defaultCategories
+  // Define processing phases
+  const phases: Record<string, string>[] = []
+  
+  // Phase 1: Custom Categories (if provided)
+  if (customCategories) {
+    phases.push(customCategories)
+  }
+  
+  // Phase 2: Default Categories
+  phases.push(defaultCategories)
+
+  let currentLeftovers = [...classList]
+  const allBlocks: CategoryBlock[] = []
+
+  // Process phases
+  for (const categories of phases) {
+    if (currentLeftovers.length === 0) break
+
+    const { blocks, leftovers } = processCategories(
+      currentLeftovers,
+      categories
+    )
+    
+    allBlocks.push(...blocks)
+    currentLeftovers = leftovers
+  }
+
+  // Handle Uncategorized
+  // Treat each uncategorized class as its own block/group to allow granular sorting if needed
+  // Or handle them as one "Uncategorized" block?
+  // Let's create one block for "Uncategorized" containing single-item groups
+  if (currentLeftovers.length > 0) {
+    allBlocks.push({
+      name: 'Uncategorized',
+      groups: currentLeftovers.map(c => [c])
+    })
+  }
+
+  // Sort Blocks if sorter is provided
+  if (sorter && allBlocks.length > 0) {
+    // 1. Identify valid blocks (non-empty)
+    const validBlocks = allBlocks.filter(b => b.groups.length > 0 && b.groups[0].length > 0)
+    
+    // 2. Extract representative class from each block (first class of first group)
+    const representatives = validBlocks.map(b => b.groups[0][0])
+    
+    // 3. Sort representatives using the provided sorter
+    const sortedRepresentatives = sorter(representatives)
+    
+    // 4. Map representative -> index
+    const sortOrder = new Map<string, number>()
+    sortedRepresentatives.forEach((cls, index) => {
+      sortOrder.set(cls, index)
+    })
+    
+    // 5. Sort blocks based on their representative's index
+    allBlocks.sort((a, b) => {
+      // Handle empty blocks just in case (though filtered above)
+      if (a.groups.length === 0 || a.groups[0].length === 0) return 1
+      if (b.groups.length === 0 || b.groups[0].length === 0) return -1
+      
+      const repA = a.groups[0][0]
+      const repB = b.groups[0][0]
+      
+      const indexA = sortOrder.has(repA) ? sortOrder.get(repA)! : Number.MAX_SAFE_INTEGER
+      const indexB = sortOrder.has(repB) ? sortOrder.get(repB)! : Number.MAX_SAFE_INTEGER
+      
+      return indexA - indexB
+    })
+  }
+
+  // Format Lines from Blocks
+  const resultLines: string[] = []
+  
+  allBlocks.forEach(block => {
+    if (block.groups.length > 0) {
+      const blockLines = formatCategoryWithLineWrapping(
+        block.groups,
+        env.options.printWidth || 80,
+        indent,
+        tabWidth
+      )
+      resultLines.push(...blockLines)
+    }
+  })
+
+  // Format as multi-line string with indentation
+  if (resultLines.length === 0) {
+    return ''
+  }
+
+  // Return formatted string with newlines and indentation
+  const classLines = resultLines.map(line => indent + line).join('\n')
+  
+  // Use closingIndent if provided, otherwise default to indent
+  const finalIndent = closingIndent !== undefined ? closingIndent : indent
+
+  return '\n' + classLines + '\n' + finalIndent
+}
+
+/**
+ * Helper to process a list of classes against a set of categories
+ */
+function processCategories(
+  classList: string[],
+  categories: Record<string, string>
+): { blocks: CategoryBlock[], leftovers: string[] } {
   const categoryGroups: Map<string, Map<string, string[]>> = new Map()
-  const uncategorized: string[] = []
+  const leftovers: string[] = []
 
   // Initialize category groups
   Object.keys(categories).forEach((category) => {
     categoryGroups.set(category, new Map())
   })
 
-  // Build prefix map with category and wildcard info
+  // Build prefix map
   const prefixMap: Array<{
     category: string
     prefix: string
@@ -50,6 +164,8 @@ export function categorizeTailwindClasses(
   Object.entries(categories).forEach(([category, prefixesString]) => {
     const prefixes = prefixesString.split(' ')
     prefixes.forEach((rawPrefix) => {
+      if (!rawPrefix.trim()) return
+
       const isWildcard = rawPrefix.endsWith('*')
       const prefix = isWildcard ? rawPrefix.slice(0, -1) : rawPrefix
       
@@ -61,7 +177,6 @@ export function categorizeTailwindClasses(
         length: prefix.length,
       })
 
-      // Initialize the group for this prefix
       const categoryMap = categoryGroups.get(category)!
       if (!categoryMap.has(rawPrefix)) {
         categoryMap.set(rawPrefix, [])
@@ -69,18 +184,16 @@ export function categorizeTailwindClasses(
     })
   })
 
-  // Sort prefixes by length (longest first for most specific match)
+  // Sort prefixes by length
   prefixMap.sort((a, b) => b.length - a.length)
 
-  // Categorize each class
+  // Categorize
   classList.forEach((cls) => {
     let matched = false
 
     for (const { category, prefix, rawPrefix, isWildcard } of prefixMap) {
       if (cls.startsWith(prefix)) {
-        // For wildcard prefixes, match exactly 'prefix', 'prefix-', 'prefix/', etc.
         if (isWildcard) {
-          // Must be exact match or followed by - or /
           if (cls === prefix || cls.startsWith(prefix + '-') || cls.startsWith(prefix + '/')) {
             const categoryMap = categoryGroups.get(category)!
             const group = categoryMap.get(rawPrefix)!
@@ -89,7 +202,6 @@ export function categorizeTailwindClasses(
             break
           }
         } else {
-          // Regular prefix match
           const categoryMap = categoryGroups.get(category)!
           const group = categoryMap.get(rawPrefix)!
           group.push(cls)
@@ -100,27 +212,13 @@ export function categorizeTailwindClasses(
     }
 
     if (!matched) {
-      uncategorized.push(cls)
+      leftovers.push(cls)
     }
   })
 
-  // Format the result with proper indentation
-  const lines: string[] = []
-
-  // Add uncategorized classes first
-  if (uncategorized.length > 0) {
-    // Treat each uncategorized class as its own group so they can wrap individually
-    const uncategorizedGroups = uncategorized.map(c => [c])
-    const uncategorizedLines = formatCategoryWithLineWrapping(
-      uncategorizedGroups,
-      env.options.printWidth || 80,
-      indent,
-      tabWidth
-    )
-    lines.push(...uncategorizedLines)
-  }
-
-  // Add categorized classes by category order
+  // Convert to Blocks
+  const blocks: CategoryBlock[] = []
+  
   Object.keys(categories).forEach((category) => {
     const categoryMap = categoryGroups.get(category)!
     const groups: string[][] = []
@@ -133,30 +231,14 @@ export function categorizeTailwindClasses(
     })
 
     if (groups.length > 0) {
-      // Apply dynamic line wrapping based on printWidth
-      const categoryLines = formatCategoryWithLineWrapping(
-        groups,
-        env.options.printWidth || 80,
-        indent,
-        tabWidth
-      )
-      lines.push(...categoryLines)
+      blocks.push({
+        name: category,
+        groups
+      })
     }
   })
 
-  // Format as multi-line string with indentation
-  if (lines.length === 0) {
-    return ''
-  }
-
-  // Return formatted string with newlines and indentation
-  // Each class line gets full indentation
-  const classLines = lines.map(line => indent + line).join('\n')
-  
-  // Use closingIndent if provided, otherwise default to indent
-  const finalIndent = closingIndent !== undefined ? closingIndent : indent
-
-  return '\n' + classLines + '\n' + finalIndent
+  return { blocks, leftovers }
 }
 
 /**
@@ -175,7 +257,8 @@ function formatCategoryWithLineWrapping(
   tabWidth: number
 ): string[] {
   const lines: string[] = []
-  let remainingGroups = [...groups]
+  // Filter out any empty groups just in case
+  let remainingGroups = [...groups].filter(g => g.length > 0)
   
   // Adjust printWidth to account for indentation
   const indentWidth = indent.split('').reduce((acc, char) => acc + (char === '\t' ? tabWidth : 1), 0)
