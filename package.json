@@ -1,7 +1,7 @@
 {
   "type": "module",
   "name": "prettier-plugin-tailwindcss-pro",
-  "version": "0.1.9",
+  "version": "0.1.10",
   "description": "A Prettier plugin for grouping Tailwind CSS classes.",
   "license": "MIT",
   "main": "dist/index.mjs",
