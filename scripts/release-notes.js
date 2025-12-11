@@ -11,7 +11,10 @@ const pkg = JSON.parse(await fs.readFile(path.resolve(__dirname, '../package.jso
 
 let version = process.argv[2] || process.env.npm_package_version || pkg.version
 
-let changelog = await fs.readFile(path.resolve(__dirname, '..', 'CHANGELOG.md'), 'utf8')
+console.error(`Debug: Resolving release notes for version: ${version}`)
+let changelogPath = path.resolve(__dirname, '..', 'CHANGELOG.md');
+console.error(`Debug: Reading changelog from: ${changelogPath}`)
+let changelog = await fs.readFile(changelogPath, 'utf8')
 let match = new RegExp(`## \\[${version}\\] - (.*)\\s+([\\s\\S]*?)(?:\\n(?:(?:##\\s)|(?:\\[))|$)`, 'g').exec(changelog)
 
 if (match) {

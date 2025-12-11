@@ -40,11 +40,16 @@ jobs:
           echo "TAG_NAME=$(git describe --tags --abbrev=0)" >> $GITHUB_ENV
 
       - name: Get release notes
+        id: notes
         run: |
-          RELEASE_NOTES=$(npm run release-notes --silent)
+          VERSION=${TAG_NAME#v}
+          RELEASE_NOTES=$(node scripts/release-notes.js $VERSION)
           if [ -z "$RELEASE_NOTES" ]; then
+            echo "::warning::No release notes found for version $VERSION"
             RELEASE_NOTES="No release notes found."
           fi
+          
+          # Multiline output to GITHUB_ENV
           echo "RELEASE_NOTES<<EOF" >> $GITHUB_ENV
           echo "$RELEASE_NOTES" >> $GITHUB_ENV
           echo "EOF" >> $GITHUB_ENV
