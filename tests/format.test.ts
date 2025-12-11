@@ -55,13 +55,7 @@ describe('whitespace', () => {
       tailwindPreserveWhitespace: true,
     })
 
-    expect(result).toEqual(`;<div
-  className={\`
-flex
-text-red-500
-underline
-\`}
-></div>`)
+    expect(result).toEqual(`;<div className={' flex text-red-500  underline '}></div>`)
   })
 
   test('whitespace can be collapsed around classes', async ({ expect }) => {
@@ -75,7 +69,7 @@ underline
       parser: 'babel',
     })
 
-    expect(result).toEqual(';<div className={`underline text-red-500 ${foo}-bar flex`}></div>')
+    expect(result).toEqual(';<div className={`text-red-500 underline ${foo}-bar flex`}></div>')
   })
 
   test('whitespace is not trimmed inside concat expressions', async ({ expect }) => {
@@ -180,13 +174,7 @@ describe('regex matching', () => {
       tailwindFunctions: ['/myfn/i'],
     })
 
-    expect(result).toEqual(`;<div
-  MyClass={\`
-p-0
-sm:p-0
-\`}
-  data-other={MyFn('p-0 sm:p-0')}
-/>`)
+    expect(result).toEqual(`;<div MyClass="p-0 sm:p-0" data-other={MyFn('p-0 sm:p-0')} />`)
   })
 
   test('anchors are supported', async ({ expect }) => {
@@ -200,22 +188,7 @@ sm:p-0
     )
 
     expect(result).toEqual(
-      `;<div
-  classList={\`
-p-0
-sm:p-0
-\`}
-  styleList={\`
-p-0
-sm:p-0
-\`}
-  otherList={\`
-p-0
-sm:p-0
-\`}
-  data-other-1={styleList('p-0 sm:p-0')}
-  data-other-2={classList('p-0 sm:p-0')}
-/>`,
+      `;<div classList="p-0 sm:p-0" styleList="p-0 sm:p-0" otherList="p-0 sm:p-0" data-other-1={styleList('p-0 sm:p-0')} data-other-2={classList('p-0 sm:p-0')} />`,
     )
   })
 

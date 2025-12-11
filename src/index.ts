@@ -16,10 +16,6 @@ import { loadPlugins } from './plugins.js'
 import { sortClasses, sortClassList } from './sorting.js'
 import type { Customizations, StringChange, TransformerContext, TransformerEnv, TransformerMetadata } from './types'
 import { spliceChangesIntoString, visit, type Path } from './utils.js'
-import { parseTailwindClassesWithBabel } from './core/parser.js'
-import { categorizeClassesAndViewports } from './core/categorizer.js'
-import { DEFAULT_CATEGORIES } from './constants/categories.js'
-import * as t from '@babel/types'
 
 let base = await loadPlugins()
 
@@ -480,8 +476,8 @@ function sortStringLiteral(
 
   // Preserve the original escaping level for the new content
   let raw = node.extra?.raw ?? node.raw
-  let quote = raw ? raw[0] : '"'
-  let originalRawContent = raw ? raw.slice(1, -1) : node.value
+  let quote = raw[0]
+  let originalRawContent = raw.slice(1, -1)
   let originalValue = node.extra?.rawValue ?? node.value
 
   if (node.extra) {
@@ -675,7 +671,6 @@ function transformJavaScript(ast: import('@babel/types').Node, { env }: Transfor
   }
 
   visit(ast, {
-
     JSXAttribute(node) {
       node = node as import('@babel/types').JSXAttribute
 
@@ -693,129 +688,11 @@ function transformJavaScript(ast: import('@babel/types').Node, { env }: Transfor
         return
       }
 
-	  // New Logic: Use Babel-based parser and categorizer
-	  const classNameNode = node
-	  // sourceText extraction is tricky here because we don't have the full source easily accessible via `env` alone?
-	  // `env.options.originalText` exists in Prettier options usually?
-	  // BUT `visit` works on AST. `recast` parses with location info.
-	  // We probably need to rely on what `recast` or the parser gave us.
-	  // The `env` passed to transform contains `options`.
-	  // `options` usually has `originalText`.
-	  const sourceText = (env.options as any).originalText || ''
-
-	  const parsed = parseTailwindClassesWithBabel(
-		classNameNode,
-		sourceText,
-        // TODO: Allow user to override categories? For now use default.
-		DEFAULT_CATEGORIES,
-		// Viewports from config/context
-		// context.has(viewport) ? No, context.getClassOrder gives strict order.
-		// We need the list of viewports (screens).
-		// env.context.context.tailwindConfig.theme.screens?
-		// env.context is the result of `getTailwindConfig(options)`.
-		// It exposes `getClassOrder`. It might not expose the config directly in a stable way across versions.
-		// Use a heuristic or try to access it.
-		// `env.context` in `src/index.ts` (line 48) is the context returned by `getTailwindConfig`.
-		// Let's assume for now we can get viewports or default to standard ones if missing.
-		// Actually, `env.context` seems to wrap the tailwind context.
-		// Let's look at `parsed.viewportClasses`. We just need to know valid viewports to separate them.
-		// If we don't pass viewports, everything goes to baseClasses or unrecognized?
-		// The parser expects `viewports` array to partition classes.
-		// Standard tailwind viewports: sm, md, lg, xl, 2xl.
-		// We should try to fetch real ones.
-		['sm', 'md', 'lg', 'xl', '2xl', 'min', 'max', 'print'] // Added min/max/print based on categories default
-	  )
-
-      // Use printWidth from options
-      const printWidth = (env.options as any).printWidth || 80
-      const formattedLines = categorizeClassesAndViewports(parsed, {
-          categories: DEFAULT_CATEGORIES,
-          viewports: ['sm', 'md', 'lg', 'xl', '2xl', 'min', 'max', 'print'],
-          viewportGrouping: 'separate', // TODO: Make configurable?
-          uncategorizedPosition: 'afterCategorized',
-		  printWidth,
-      })
-
-
-
-      // Reconstruct the value
-      // If single line, use string literal. If multiple, use template literal (or maintain expression).
-      // If we have dynamic parts, we might have to be careful.
-	  // `parsed.dynamicExpressions` contains the raw text of dynamic parts.
-
-	  // Logic:
-	  // If we have dynamic expressions, we basically append them?
-      // The provided `formatJSXOpeningElement` logic constructs a complex TemplateLiteral.
-      // Here we are simply replacing the `node.value`.
-
-      // Simplified reconstruction:
-      const hasMultipleLines = formattedLines.length > 1
-      const hasDynamic = parsed.dynamicExpressions.length > 0
-
-      // Simplify based on Parser compatibility
-      const parser = (env.options as any).parser
-      // Estree-based parsers (typescript, flow, etc.) crash when we replace a StringLiteral
-      // with a JSXExpressionContainer+TemplateLiteral because the printer relies on original source locations.
-      // Babel parsers handle this AST transformation gracefully.
-      const isBabelLike = parser === 'babel' || parser === 'babel-ts' || parser === 'babel-flow' || parser === 'astro' 
-      
-      const shouldConvertToTemplate = hasMultipleLines && isBabelLike
-
-      if (t.isStringLiteral(node.value) && !hasDynamic) {
-          if (!shouldConvertToTemplate) {
-              // Mutate existing StringLiteral to preserve location/ranges for sensitive printers (estree)
-              // Force single line to avoid "slice" crashes in printers that rely on source line mapping
-              const newValue = formattedLines.join(' ')
-              node.value.value = newValue
-              
-              // Safe update of extra to match new value
-              if (node.value.extra) {
-                  const raw = String(node.value.extra.raw || '')
-                  const quote = (raw.startsWith("'") || raw.startsWith('"')) ? raw[0] : '"'
-                  node.value.extra.rawValue = newValue
-                  node.value.extra.raw = quote + newValue + quote
-              }
-               // Also update direct raw if present (ESTree compat)
-              if ((node.value as any).raw) {
-                   const raw = (node.value as any).raw
-                   const quote = (typeof raw === 'string' && (raw.startsWith("'") || raw.startsWith('"'))) ? raw[0] : '"'
-                   ;(node.value as any).raw = quote + newValue + quote
-              }
-          } else {
-               // Multiline -> Switch to JSXExpressionContainer with TemplateLiteral
-               const quasis = []
-               const raw = `\n${formattedLines.join('\n')}\n`
-               quasis.push(t.templateElement({ raw, cooked: raw }, true))
-               
-               node.value = t.jsxExpressionContainer(
-                   t.templateLiteral(quasis, [])
-               )
-          }
-      } else {
-           // Was already expression or multiline
-           if (!hasDynamic) {
-             const raw = formattedLines.join(hasMultipleLines ? '\n' : ' ')
-             
-             if (shouldConvertToTemplate) {
-                 const quasis = [t.templateElement({ raw: hasMultipleLines ? `\n${raw}\n` : raw, cooked: hasMultipleLines ? `\n${raw}\n` : raw }, true)]
-                 node.value = t.jsxExpressionContainer(
-                  t.templateLiteral(quasis, [])
-                )
-             } else {
-                 const raw = formattedLines.join(' ')
-                 const newNode = t.stringLiteral(raw)
-                 if (node.value) {
-                     const val = node.value as any
-                     newNode.loc = val.loc
-                     newNode.start = val.start
-                     newNode.end = val.end
-                     if (val.range) (newNode as any).range = val.range
-                 }
-                 node.value = newNode
-             }
-          }
+      if (isStringLiteral(node.value)) {
+        sortStringLiteral(node.value, { env })
+      } else if (node.value.type === 'JSXExpressionContainer') {
+        sortInside(node.value)
       }
-
     },
 
     CallExpression(node) {
@@ -1403,4 +1280,9 @@ export interface PluginOptions {
    * Preserve duplicate classes inside a class list when sorting.
    */
   tailwindPreserveDuplicates?: boolean
+
+  /**
+   * Enable custom Tailwind formatting behavior.
+   */
+  useTailwindFormat?: boolean
 }

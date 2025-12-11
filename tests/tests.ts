@@ -63,96 +63,36 @@ let css: TestEntry[] = [
 ]
 
 export let javascript: TestEntry[] = [
-  [
-    `;<div class="sm:p-0 p-0" />`,
-    `;<div
-  class={\`
-p-0
-sm:p-0
-\`}
-/>`,
-  ],
+  t`;<div class="${yes}" />`,
   t`;<div ns:class="${no}" />`,
   t`/* <div class="${no}" /> */`,
   t`// <div class="${no}" />`,
   t`;<div not-class="${no}" />`,
-  [
-    `;<div class={\`sm:p-0 p-0\`} />`,
-    `;<div
-  class={\`
-p-0
-sm:p-0
-\`}
-/>`,
-  ],
-  // Complex template literal logic verification needed, skipping complex dynamic for now or updating if failure confirms.
-  // t`;<div class={\`${yes} \${'${yes}'} \${'${yes}' ? '${yes}' : '${yes}'}\`} />`,
-  // Simplified replacement for basic cases:
-  [
-    `;<div class={'sm:p-0 p-0'} />`,
-    `;<div
-  class={\`
-p-0
-sm:p-0
-\`}
-/>`,
-  ],
-  t`;<div class={'${no}' + '${no}'} />`,
-  t`;<div class={'${no}' ? '${no}' + '${no}' : '${no}'} />`,
-  t`;<div class={clsx('${no}', ['${no}'])} />`,
-  t`;<div class={clsx({ '${no}': '${no}' })} />`,
-  t`;<div class={{ '${no}': '${no}' }['${no}']} />`,
+  t`;<div class={\`${yes}\`} />`,
+  t`;<div class={\`${yes} \${'${yes}'} \${'${yes}' ? '${yes}' : '${yes}'}\`} />`,
+  t`;<div class={'${yes}'} />`,
+  t`;<div class={'${yes}' + '${yes}'} />`,
+  t`;<div class={'${yes}' ? '${yes}' + '${yes}' : '${yes}'} />`,
+  t`;<div class={clsx('${yes}', ['${yes}'])} />`,
+  t`;<div class={clsx({ '${yes}': '${yes}' })} />`,
+  t`;<div class={{ '${yes}': '${yes}' }['${yes}']} />`,
   t`;<div class />`,
   t`;<div class="" />`,
-  [`;<div class={\`sm:block inline flex\${someVar}\`} />`, `;<div class={\`sm:block inline flex\${someVar}\`} />`],
+  [`;<div class={\`sm:block inline flex\${someVar}\`} />`, `;<div class={\`inline sm:block flex\${someVar}\`} />`],
   [
     `;<div class={\`\${someVar}sm:block md:inline flex\`} />`,
-    `;<div class={\`\${someVar}sm:block md:inline flex\`} />`,
+    `;<div class={\`\${someVar}sm:block flex md:inline\`} />`,
   ],
   [
     `;<div class={\`sm:p-0 p-0 \${someVar}sm:block md:inline flex\`} />`,
-    `;<div class={\`sm:p-0 p-0 \${someVar}sm:block md:inline flex\`} />`,
+    `;<div class={\`p-0 sm:p-0 \${someVar}sm:block flex md:inline\`} />`,
   ],
-  [
-    `;<div class="block px-1\u3000py-2" />`,
-    `;<div
-  class={\`
-block
-px-1 py-2
-\`}
-/>`,
-  ],
+  [`;<div class="block px-1\u3000py-2" />`, `;<div class="px-1\u3000py-2 block" />`],
 
   // Whitespace is normalized and duplicates are removed
-  [
-    ';<div class="   m-0  sm:p-0  p-0   " />',
-    `;<div
-  class={\`
-p-0
-sm:p-0
-m-0
-\`}
-/>`,
-  ],
-  [
-    ";<div class={'   m-0  sm:p-0  p-0   '} />",
-    `;<div
-  class={\`
-p-0
-sm:p-0
-m-0
-\`}
-/>`,
-  ],
-  [
-    ';<div class={` sm:p-0\n  p-0   `} />',
-    `;<div
-  class={\`
-p-0
-sm:p-0
-\`}
-/>`,
-  ],
+  [';<div class="   m-0  sm:p-0  p-0   " />', ';<div class="m-0 p-0 sm:p-0" />'],
+  [";<div class={'   m-0  sm:p-0  p-0   '} />", ";<div class={'m-0 p-0 sm:p-0'} />"],
+  [';<div class={` sm:p-0\n  p-0   `} />', ';<div class={`p-0 sm:p-0`} />'],
   [';<div class="flex flex" />', ';<div class="flex" />'],
   [';<div class={`   flex  flex `} />', ';<div class={`flex`} />'],
   [';<div class={`   flex  flex flex${someVar}block block`} />', ';<div class={`flex flex${someVar}block block`} />'],

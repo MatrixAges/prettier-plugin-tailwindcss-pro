@@ -59,6 +59,13 @@ export const options: Record<string, SupportOption> = {
     category: 'Tailwind CSS',
     description: 'The package name to use when loading Tailwind CSS',
   },
+
+  useTailwindFormat: {
+    type: 'boolean',
+    default: false,
+    category: 'Tailwind CSS',
+    description: 'Enable custom Tailwind formatting behavior',
+  },
 }
 
 export interface Matcher {
