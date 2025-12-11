@@ -53,4 +53,4 @@ jobs:
           echo "RELEASE_CHANNEL=$(npm run release-channel --silent)" >> $GITHUB_ENV
 
       - name: Publish
-        run: npm publish --provenance --tag ${{ env.RELEASE_CHANNEL }}
+        run: npm publish --provenance --access public --tag ${{ env.RELEASE_CHANNEL }}
