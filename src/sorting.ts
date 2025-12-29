@@ -49,73 +49,21 @@ export function sortClasses(
 
   // When useTailwindFormat is enabled, use category-based formatting
   if (env.options.useTailwindFormat) {
-    let parts = classStr.split(/([\t\r\f\n ]+)/)
-    let classes = parts.filter((_, i) => i % 2 === 0).filter(Boolean)
+    const originalHasNewline = classStr.includes('\n')
+    const tabWidth = env.options.tabWidth || 2
+    const useTabs = env.options.useTabs || false
+    
+    // Collapse all whitespace to get a clean list of classes
+    const classes = classStr.split(/[\s\t\n\r]+/).map(c => c.trim()).filter(Boolean)
     
     if (classes.length === 0) {
       return classStr
     }
 
-    const tabWidth = env.options.tabWidth || 2
-    const useTabs = env.options.useTabs || false
-    const printWidth = env.options.printWidth || 80
+    // Determine if it should be multi-line
+    const shouldExpand = originalHasNewline || classes.length >= 5
 
-    // Check if the className already has newlines (multi-line)
-    const hasNewline = classStr.includes('\n')
-    
-    // For single-line className, check if it should be expanded to multi-line
-    // Expand if there are 5+ classes (enough to benefit from categorization)
-    if (!hasNewline) {
-      // For single-line string, only expand if 5+ classes
-      if (classes.length >= 5) {
-        // Calculate indentation based on column if available
-        let indent: string
-        let closingIndent: string | undefined
-
-        if (column !== undefined && column >= 0) {
-          const level = column
-          if (useTabs) {
-            indent = '\t'.repeat(level + 1)
-            closingIndent = useClosingIndent ? '\t'.repeat(level) : undefined
-          } else {
-            indent = ' '.repeat((level + 1) * tabWidth)
-            closingIndent = useClosingIndent ? ' '.repeat(level * tabWidth) : undefined
-          }
-        } else {
-          const baseIndent = useTabs ? '\t' : ' '.repeat(tabWidth)
-          indent = baseIndent.repeat(4) // Default fallback
-          closingIndent = useClosingIndent ? baseIndent.repeat(3) : undefined
-        }
-        
-        // Extract custom categories and format
-        let customCategories: Record<string, string> | undefined
-        const categoriesPath = env.options.useTailwindFormatCategories
-        
-        if (categoriesPath && typeof categoriesPath === 'string') {
-          try {
-            const fs = require('fs')
-            const path = require('path')
-            const resolvedPath = path.isAbsolute(categoriesPath) 
-              ? categoriesPath 
-              : path.resolve(process.cwd(), categoriesPath)
-            const fileContent = fs.readFileSync(resolvedPath, 'utf-8')
-            customCategories = JSON.parse(fileContent)
-          } catch (e) {
-            console.warn(`Failed to load custom categories from ${categoriesPath}:`, e)
-          }
-        }
-
-        return categorizeTailwindClasses(
-          classes,
-          env,
-          indent,
-          customCategories,
-          tabWidth,
-          closingIndent
-        )
-      }
-    } else {
-      // Already multi-line - AWLAYS force logical indentation if column is available
+    if (shouldExpand) {
       let indent: string
       let closingIndent: string | undefined
 
@@ -129,25 +77,12 @@ export function sortClasses(
           closingIndent = useClosingIndent ? ' '.repeat(level * tabWidth) : undefined
         }
       } else {
-        // Fallback to extraction ONLY if column is missing (e.g. non-JavaScript contexts)
-        const indentMatch = classStr.match(/\n([ \t]+)/)
-        if (indentMatch) {
-          indent = indentMatch[1]
-          if (useClosingIndent) {
-            if (indent.includes('\t')) {
-              closingIndent = indent.length > 1 ? indent.slice(0, -1) : ''
-            } else {
-              closingIndent = indent.length > tabWidth ? indent.slice(0, -tabWidth) : ''
-            }
-          }
-        } else {
-          const baseIndent = useTabs ? '\t' : ' '.repeat(tabWidth)
-          indent = baseIndent.repeat(4)
-          closingIndent = useClosingIndent ? baseIndent.repeat(3) : undefined
-        }
+        const baseIndent = useTabs ? '\t' : ' '.repeat(tabWidth)
+        indent = baseIndent.repeat(4) // Fallback
+        closingIndent = useClosingIndent ? baseIndent.repeat(3) : undefined
       }
 
-      // Extract custom categories if provided
+      // Extract custom categories
       let customCategories: Record<string, string> | undefined
       const categoriesPath = env.options.useTailwindFormatCategories
       
@@ -165,7 +100,6 @@ export function sortClasses(
         }
       }
 
-      // Categorize classes and return formatted string with indentation
       return categorizeTailwindClasses(
         classes,
         env,
@@ -174,6 +108,9 @@ export function sortClasses(
         tabWidth,
         closingIndent
       )
+    } else {
+      // Small single-line class list - use the clean collapsed version for subsequent sorting
+      classStr = classes.join(' ')
     }
   }
 

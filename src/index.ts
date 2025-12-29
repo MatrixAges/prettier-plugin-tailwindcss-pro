@@ -479,7 +479,7 @@ function sortStringLiteral(
     env,
     removeDuplicates,
     collapseWhitespace,
-    column: column ?? node.loc?.start?.column,
+    column: column,
   })
 
   let didChange = result !== node.value
@@ -672,6 +672,38 @@ function canCollapseWhitespaceIn(path: Path<import('@babel/types').Node, any>) {
 //
 // We cross several parsers that share roughly the same shape so things are
 // good enough. The actual AST we should be using is probably estree + ts.
+function getNestingDepth(path: any[]): number {
+  let depth = 0
+  for (const entry of path) {
+    const node = entry.node || entry
+    if (node) {
+      if (
+        node.type === 'JSXElement' || 
+        node.type === 'JSXFragment' ||
+        node.type === 'BlockStatement' ||
+        node.type === 'ObjectExpression' ||
+        node.type === 'ArrayExpression' ||
+        node.type === 'ClassBody' ||
+        node.type === 'SwitchCase' ||
+        node.type === 'TSModuleBlock'
+      ) {
+        depth++
+      } else if (
+        node.type === 'ArrowFunctionExpression' &&
+        node.body.type !== 'BlockStatement'
+      ) {
+        depth++
+      } else if (
+        node.type === 'ConditionalExpression' ||
+        node.type === 'LogicalExpression'
+      ) {
+        depth++
+      }
+    }
+  }
+  return depth
+}
+
 function transformJavaScript(ast: import('@babel/types').Node, { env }: TransformerContext) {
   let { matcher } = env
 
@@ -758,7 +790,7 @@ function transformJavaScript(ast: import('@babel/types').Node, { env }: Transfor
       // Or simply: indent = (depth + 1) * tabWidth.
       // getNestingDepth includes the JSXElement itself. So depth is N+1 (if we count 1 for Element).
       // If we use base depth of JSXElement, then attribute is +1 level deep.
-      const depth = getNestingDepth(path) + 1
+      const depth = getNestingDepth(path)
 
       if (isStringLiteral(node.value)) {
         sortStringLiteral(node.value, { env, column: depth })
@@ -1195,116 +1227,6 @@ export const printers: Record<string, Printer> = (function () {
     }
 
     printers['svelte-ast'] = printer
-  }
-
-  // Helper function to traverse and modify Prettier Doc structure
-  function traverseDoc(doc: any, callback: (doc: any, parent: any, key: string | number) => any): any {
-    if (!doc || typeof doc !== 'object') {
-      return doc
-    }
-
-    // Arrays in Doc (like concat)
-    if (Array.isArray(doc)) {
-      return doc.map((item, index) => {
-        const modified = callback(item, doc, index)
-        return modified !== undefined ? modified : traverseDoc(item, callback)
-      })
-    }
-
-    // Objects in Doc
-    const result: any = {}
-    for (const key in doc) {
-      if (doc.hasOwnProperty(key)) {
-        const modified = callback(doc[key], doc, key)
-        result[key] = modified !== undefined ? modified : traverseDoc(doc[key], callback)
-      }
-    }
-    return result
-  }
-
-  // Add estree printer for JSX/TSX template literal formatting
-  // estree is the printer used by babel and typescript parsers
-  if (base.printers['estree']) {
-    let original = base.printers['estree']
-    let printer = { ...original }
-
-    // Intercept print to handle template literals in className
-    const originalPrint = original.print
-    printer.print = function(path: any, options: any, print: any) {
-      const node = path.getValue()
-      
-      // Check if this is a className attribute with template literal
-      if (node.type === 'JSXAttribute' &&
-          node.name?.name === 'className' &&
-          node.value?.type === 'JSXExpressionContainer' &&
-          node.value.expression?.type === 'TemplateLiteral' &&
-          options.useTailwindFormat) {
-        
-        // Print the attribute normally first
-        let result = originalPrint.call(this, path, options, print)
-        
-        // Modify the Doc to add newline before closing backtick
-        // In the Doc structure, the backtick is a standalone string "`"
-        // We need to find its parent array and insert a hardline before it
-        let backtickCount = 0  // Count backticks: first is opening, second is closing
-        
-        function modifyDoc(doc: any, parent: any, key: string | number): any {
-          // If this is an array, check if it contains the closing backtick
-          if (Array.isArray(doc)) {
-            for (let i = 0; i < doc.length; i++) {
-              // Look for backtick strings
-              if (doc[i] === '`') {
-                backtickCount++
-                
-                // Only modify the second backtick (closing one)
-                if (backtickCount === 2 && i >= 1 && typeof doc[i-1] !== 'undefined') {
-                  
-                  // Calculate indent (one level less than classes)
-                  const tabWidth = options.tabWidth || 2
-                  const baseIndent = options.useTabs ? '\t' : ' '.repeat(tabWidth)
-                  const closingIndent = baseIndent.repeat(3) // 3 levels for className backtick
-                  
-                  // Insert hardline and indent before the backtick
-                  doc.splice(i, 0, 
-                    { type: 'line', hard: true, literal: true },
-                    { type: 'break-parent' },
-                    closingIndent
-                  )
-                  
-                  return doc
-                }
-              }
-              
-              // Recursively modify nested structures
-              const modified = modifyDoc(doc[i], doc, i)
-              if (modified !== undefined) {
-                doc[i] = modified
-              }
-            }
-          } else if (typeof doc === 'object' && doc !== null) {
-            // Recursively modify object properties
-            for (const key in doc) {
-              if (doc.hasOwnProperty(key)) {
-                const modified = modifyDoc(doc[key], doc, key)
-                if (modified !== undefined) {
-                  doc[key] = modified
-                }
-              }
-            }
-          }
-          
-          return undefined
-        }
-        
-        modifyDoc(result, null, 0)
-        
-        return result
-      }
-      
-      return originalPrint.call(this, path, options, print)
-    }
-
-    printers['estree'] = printer
   }
 
   return printers

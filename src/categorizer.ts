@@ -33,6 +33,9 @@ export function categorizeTailwindClasses(
   closingIndent?: string,
   sorter?: (classList: string[]) => string[]
 ): string {
+  // Ensure class names are clean
+  classList = classList.map(c => c.trim()).filter(Boolean)
+
   if (classList.length === 0) {
     return ''
   }
@@ -266,12 +269,12 @@ function formatCategoryWithLineWrapping(
 
   while (remainingGroups.length > 0) {
     let currentLineGroups = [...remainingGroups]
-    let currentLineString = currentLineGroups.map((g) => g.join(' ')).join(' ')
+    let currentLineString = currentLineGroups.map((g) => g.map(c => c.trim()).join(' ')).join(' ')
 
     // If line exceeds printWidth and has more than one group, remove the last group
     while (currentLineString.length > effectivePrintWidth && currentLineGroups.length > 1) {
       currentLineGroups.pop()
-      currentLineString = currentLineGroups.map((g) => g.join(' ')).join(' ')
+      currentLineString = currentLineGroups.map((g) => g.map(c => c.trim()).join(' ')).join(' ')
     }
 
     // Add the line
