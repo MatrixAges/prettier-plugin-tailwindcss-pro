@@ -675,11 +675,10 @@ function canCollapseWhitespaceIn(path: Path<import('@babel/types').Node, any>) {
 function transformJavaScript(ast: import('@babel/types').Node, { env }: TransformerContext) {
   let { matcher } = env
 
-  function getNestingDepth(path: any): number {
+  function getNestingDepth(path: any[]): number {
     let depth = 0
-    let current = path
-    while (current) {
-      const node = current.node
+    for (const entry of path) {
+      const node = entry.node
       if (node) {
         if (
           node.type === 'JSXElement' || 
@@ -688,26 +687,26 @@ function transformJavaScript(ast: import('@babel/types').Node, { env }: Transfor
           node.type === 'ObjectExpression' ||
           node.type === 'ArrayExpression' ||
           node.type === 'ClassBody' ||
-          node.type === 'SwitchCase'
+          node.type === 'SwitchCase' ||
+          node.type === 'FunctionDeclaration' ||
+          node.type === 'ClassDeclaration' ||
+          node.type === 'VariableDeclarator'
         ) {
           depth++
         } else if (
           node.type === 'ArrowFunctionExpression' &&
           node.body.type !== 'BlockStatement'
         ) {
-          // Implicit return arrow function body
           depth++
         } else if (
           node.type === 'ConditionalExpression' ||
           node.type === 'LogicalExpression'
         ) {
-          // Nested expressions
           depth++
         } else if (node.type === 'ReturnStatement') {
           depth++
         }
       }
-      current = current.parentPath
     }
     return depth
   }

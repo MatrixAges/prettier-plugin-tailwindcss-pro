@@ -20,11 +20,11 @@ const Index = (props: IProps) => {
 	return (
 		<div
 			className='
-		flex flex-col
-		items-center justify-center
-		w-screen h-screen
-		gap-4
-	'
+						flex flex-col
+						items-center justify-center
+						w-screen h-screen
+						gap-4
+					'
 		>
 			<AirplaneTiltIcon className='size-20'></AirplaneTiltIcon>
 			<span>Permissions required</span>
@@ -32,15 +32,15 @@ const Index = (props: IProps) => {
 				{keys.map((item) => (
 					<button
 						className='
-		relative
-		flex
-		items-center justify-center
-		w-72 h-10
-		px-4
-		rounded-3xl
-		bg-std-100
-		clickable capitalize
-	'
+									relative
+									flex
+									items-center justify-center
+									w-72 h-10
+									px-4
+									rounded-3xl
+									bg-std-100
+									clickable capitalize
+								'
 						key={item}
 						onClick={() => onItem(item)}
 					>

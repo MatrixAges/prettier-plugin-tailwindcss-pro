@@ -66,11 +66,8 @@ export function sortClasses(
     // For single-line className, check if it should be expanded to multi-line
     // Expand if there are 5+ classes (enough to benefit from categorization)
     if (!hasNewline) {
-      // Keep single line if there are fewer than 5 classes
-      if (classes.length < 5) {
-        // Short enough to stay on one line - fall through to normal sorting logic below
-      } else {
-        // Need to expand to multi-line
+      // For single-line string, only expand if 5+ classes
+      if (classes.length >= 5) {
         // Calculate indentation based on column if available
         let indent: string
         let closingIndent: string | undefined
@@ -118,7 +115,7 @@ export function sortClasses(
         )
       }
     } else {
-      // Already multi-line - use existing indentation or column-based if available
+      // Already multi-line - AWLAYS force logical indentation if column is available
       let indent: string
       let closingIndent: string | undefined
 
@@ -132,6 +129,7 @@ export function sortClasses(
           closingIndent = useClosingIndent ? ' '.repeat(level * tabWidth) : undefined
         }
       } else {
+        // Fallback to extraction ONLY if column is missing (e.g. non-JavaScript contexts)
         const indentMatch = classStr.match(/\n([ \t]+)/)
         if (indentMatch) {
           indent = indentMatch[1]
