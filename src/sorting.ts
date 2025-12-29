@@ -56,68 +56,101 @@ export function sortClasses(
 
     const tabWidth = env.options.tabWidth || 2
     const useTabs = env.options.useTabs || false
-    const baseIndent = useTabs ? '\t' : ' '.repeat(tabWidth)
+    const printWidth = env.options.printWidth || 80
+
+    // Check if the className already has newlines (multi-line)
+    const hasNewline = classStr.includes('\n')
     
-    // Extract existing indentation from the original string
-    // Look for the indentation pattern in the original multi-line className
-    // Match the first line that has actual content (after a newline)
-    const indentMatch = classStr.match(/\n([ \t]+)/)
-    let indent: string
-    let closingIndent: string | undefined
-    
-    if (indentMatch) {
-      // Use the existing indentation from the original string
-      indent = indentMatch[1]
-      // Closing indent should be one level less (one tabWidth less)
-      if (useClosingIndent) {
-        // Calculate closing indent: remove one level of indentation
-        if (useTabs) {
-          closingIndent = indent.length > 1 ? indent.slice(0, -1) : ''
-        } else {
-          closingIndent = indent.length > tabWidth ? indent.slice(0, -tabWidth) : ''
+    // For single-line className, check if it should be expanded to multi-line
+    // Expand if there are 5+ classes (enough to benefit from categorization)
+    if (!hasNewline) {
+      // Keep single line if there are fewer than 5 classes
+      if (classes.length < 5) {
+        // Short enough to stay on one line - fall through to normal sorting logic below
+      } else {
+        // Exceeds printWidth - need to expand to multi-line
+        // Use default indentation based on tabWidth
+        const baseIndent = useTabs ? '\t' : ' '.repeat(tabWidth)
+        const indent = baseIndent.repeat(4) // Default 4 levels
+        const closingIndent = useClosingIndent ? baseIndent.repeat(3) : undefined
+        
+        // Extract custom categories and format
+        let customCategories: Record<string, string> | undefined
+        const categoriesPath = env.options.useTailwindFormatCategories
+        
+        if (categoriesPath && typeof categoriesPath === 'string') {
+          try {
+            const fs = require('fs')
+            const path = require('path')
+            const resolvedPath = path.isAbsolute(categoriesPath) 
+              ? categoriesPath 
+              : path.resolve(process.cwd(), categoriesPath)
+            const fileContent = fs.readFileSync(resolvedPath, 'utf-8')
+            customCategories = JSON.parse(fileContent)
+          } catch (e) {
+            console.warn(`Failed to load custom categories from ${categoriesPath}:`, e)
+          }
         }
+
+        return categorizeTailwindClasses(
+          classes,
+          env,
+          indent,
+          customCategories,
+          tabWidth,
+          closingIndent
+        )
       }
     } else {
-      // Fallback to default indentation if no existing indent found
-      indent = baseIndent.repeat(4)
-      closingIndent = useClosingIndent ? baseIndent.repeat(3) : undefined
-    }
-
-    // Extract custom categories if provided
-    // Support file path to JSON file
-    let customCategories: Record<string, string> | undefined
-    const categoriesPath = env.options.useTailwindFormatCategories
-    
-    if (categoriesPath && typeof categoriesPath === 'string') {
-      try {
-        // Import fs module dynamically
-        const fs = require('fs')
-        const path = require('path')
+      // Already multi-line - use existing indentation
+      const indentMatch = classStr.match(/\n([ \t]+)/)
+      let indent: string
+      let closingIndent: string | undefined
+      
+      if (indentMatch) {
+        indent = indentMatch[1]
         
-        // Resolve path relative to the config file location or cwd
-        const resolvedPath = path.isAbsolute(categoriesPath) 
-          ? categoriesPath 
-          : path.resolve(process.cwd(), categoriesPath)
-        
-        // Read and parse JSON file
-        const fileContent = fs.readFileSync(resolvedPath, 'utf-8')
-        customCategories = JSON.parse(fileContent)
-      } catch (e) {
-        // If file reading or parsing fails, ignore and use defaults
-        console.warn(`Failed to load custom categories from ${categoriesPath}:`, e)
-        customCategories = undefined
+        if (useClosingIndent) {
+          if (indent.includes('\t')) {
+            closingIndent = indent.length > 1 ? indent.slice(0, -1) : ''
+          } else {
+            closingIndent = indent.length > tabWidth ? indent.slice(0, -tabWidth) : ''
+          }
+        }
+      } else {
+        const baseIndent = useTabs ? '\t' : ' '.repeat(tabWidth)
+        indent = baseIndent.repeat(4)
+        closingIndent = useClosingIndent ? baseIndent.repeat(3) : undefined
       }
-    }
 
-    // Categorize classes and return formatted string with indentation
-    return categorizeTailwindClasses(
-      classes,
-      env,
-      indent,
-      customCategories,
-      tabWidth,
-      closingIndent
-    )
+      // Extract custom categories if provided
+      let customCategories: Record<string, string> | undefined
+      const categoriesPath = env.options.useTailwindFormatCategories
+      
+      if (categoriesPath && typeof categoriesPath === 'string') {
+        try {
+          const fs = require('fs')
+          const path = require('path')
+          const resolvedPath = path.isAbsolute(categoriesPath) 
+            ? categoriesPath 
+            : path.resolve(process.cwd(), categoriesPath)
+          const fileContent = fs.readFileSync(resolvedPath, 'utf-8')
+          customCategories = JSON.parse(fileContent)
+        } catch (e) {
+          console.warn(`Failed to load custom categories from ${categoriesPath}:`, e)
+        }
+      }
+
+      // Categorize classes and return formatted string with indentation
+      return categorizeTailwindClasses(
+        classes,
+        env,
+        indent,
+        customCategories,
+        tabWidth,
+        closingIndent
+      )
+    }
   }
 
   if (env.options.tailwindPreserveWhitespace) {

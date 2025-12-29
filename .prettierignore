@@ -1,4 +1,3 @@
-tests/fixtures
-.github/
+# Prettier ignore file
 dist/
-README.md
+node_modules/

@@ -9,6 +9,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Nothing yet!
 
+## [0.1.16] - 2025-12-29
+
+### Fixed
+
+- Fix multi-line className indentation: now correctly preserves original string indentation format
+- Optimize single-line/multi-line expansion logic: only expand to multi-line categorized format when class count >= 5
+
+### Added
+
+- Add complex-jsx test case covering complex nested JSX scenarios
+
 ## [0.1.14] - 2025-12-11
 
 ### Features

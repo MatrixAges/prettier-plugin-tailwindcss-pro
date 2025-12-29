@@ -92,5 +92,28 @@ describe('useTailwindFormat', () => {
 
     expect(result).toEqual(expected.trim())
   })
+
+  test('complex-jsx formatting', async ({ expect }) => {
+    const sourceFile = path.join(__dirname, 'categories/complex-jsx/complex-jsx.tsx')
+    const expectedFile = path.join(__dirname, 'categories/complex-jsx/complex-jsx.expected.tsx')
+
+    const source = await readFile(sourceFile, 'utf-8')
+    const expected = await readFile(expectedFile, 'utf-8')
+
+    const result = await format(source, {
+      parser: 'typescript',
+      useTailwindFormat: true,
+      singleQuote: true,
+	trailingComma: 'none',
+	printWidth: 120,
+	useTabs: true,
+	semi: false,
+	tabWidth: 6,
+	jsxSingleQuote: true,
+    })
+
+    expect(result).toEqual(expected.trim())
+  })
 })
+
 
