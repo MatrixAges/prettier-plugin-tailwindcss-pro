@@ -54,18 +54,34 @@ export function sortClasses(
       return classStr
     }
 
-    // Determine indentation based on tabWidth
-    // For JSX className attributes, we need extra indentation:
-    // Base indent (2 for function) + return statement (2) + div (2) + className attr (2) = 8 spaces typically
     const tabWidth = env.options.tabWidth || 2
     const useTabs = env.options.useTabs || false
     const baseIndent = useTabs ? '\t' : ' '.repeat(tabWidth)
     
-    // For className in JSX, use 4 levels of indentation (8 spaces with tabWidth=2)
-    const indent = baseIndent.repeat(4)
-    // Closing indent should be one level less (aligned with className)
-    // Only use closingIndent if useClosingIndent is true
-    const closingIndent = useClosingIndent ? baseIndent.repeat(3) : undefined
+    // Extract existing indentation from the original string
+    // Look for the indentation pattern in the original multi-line className
+    // Match the first line that has actual content (after a newline)
+    const indentMatch = classStr.match(/\n([ \t]+)/)
+    let indent: string
+    let closingIndent: string | undefined
+    
+    if (indentMatch) {
+      // Use the existing indentation from the original string
+      indent = indentMatch[1]
+      // Closing indent should be one level less (one tabWidth less)
+      if (useClosingIndent) {
+        // Calculate closing indent: remove one level of indentation
+        if (useTabs) {
+          closingIndent = indent.length > 1 ? indent.slice(0, -1) : ''
+        } else {
+          closingIndent = indent.length > tabWidth ? indent.slice(0, -tabWidth) : ''
+        }
+      }
+    } else {
+      // Fallback to default indentation if no existing indent found
+      indent = baseIndent.repeat(4)
+      closingIndent = useClosingIndent ? baseIndent.repeat(3) : undefined
+    }
 
     // Extract custom categories if provided
     // Support file path to JSON file
