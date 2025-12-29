@@ -1,5 +1,5 @@
 git add .
-git commit -m "chore: release v0.1.16"
-git tag v0.1.16
+git commit -m "chore: release v0.2.0"
+git tag v0.2.0
 git push
-git push origin v0.1.16
+git push origin v0.2.0

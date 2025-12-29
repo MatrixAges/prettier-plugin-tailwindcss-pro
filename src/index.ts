@@ -680,6 +680,7 @@ function getNestingDepth(path: any[]): number {
       if (
         node.type === 'JSXElement' || 
         node.type === 'JSXFragment' ||
+        node.type === 'JSXAttribute' ||
         node.type === 'BlockStatement' ||
         node.type === 'ObjectExpression' ||
         node.type === 'ArrayExpression' ||
@@ -707,41 +708,7 @@ function getNestingDepth(path: any[]): number {
 function transformJavaScript(ast: import('@babel/types').Node, { env }: TransformerContext) {
   let { matcher } = env
 
-  function getNestingDepth(path: any[]): number {
-    let depth = 0
-    for (const entry of path) {
-      const node = entry.node
-      if (node) {
-        if (
-          node.type === 'JSXElement' || 
-          node.type === 'JSXFragment' ||
-          node.type === 'BlockStatement' ||
-          node.type === 'ObjectExpression' ||
-          node.type === 'ArrayExpression' ||
-          node.type === 'ClassBody' ||
-          node.type === 'SwitchCase' ||
-          node.type === 'FunctionDeclaration' ||
-          node.type === 'ClassDeclaration' ||
-          node.type === 'VariableDeclarator'
-        ) {
-          depth++
-        } else if (
-          node.type === 'ArrowFunctionExpression' &&
-          node.body.type !== 'BlockStatement'
-        ) {
-          depth++
-        } else if (
-          node.type === 'ConditionalExpression' ||
-          node.type === 'LogicalExpression'
-        ) {
-          depth++
-        } else if (node.type === 'ReturnStatement') {
-          depth++
-        }
-      }
-    }
-    return depth
-  }
+
 
   function sortInside(ast: import('@babel/types').Node, depth?: number) {
     visit(ast, (node, path) => {

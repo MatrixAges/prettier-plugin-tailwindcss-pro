@@ -8,6 +8,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 - Nothing yet!
+ 
+## [0.2.0] - 2025-12-29
+ 
+### Added
+ 
+- **Logical Depth Assertion**: Improved indentation logic that strictly calculates nesting depth from AST.
+- Support for `TSModuleBlock` in depth calculation.
+- New `complex-jsx` test case for verifying deep nesting scenarios.
+ 
+### Fixed
+ 
+- **Indentation Locking**: Fixed an issue where manual tabs/spaces would persist in multi-line `className` attributes.
+- **Strict Re-formatting**: Implemented a "Collapse-First" strategy that ignores all original source indentation for multi-line classes.
+- **Precise Alignment**: Removed redundant node counts (like `ReturnStatement` or `FunctionDeclaration`) and included `JSXAttribute` to achieve perfect Prettier-standard alignment.
+- Fixed duplicated internal `getNestingDepth` functions in `index.ts`.
+ 
+### Improved
+ 
+- Enhanced multi-line detection: now forces indentation for any user-provided newlines, regardless of class count.
+- Robust whitespace stripping in individual class names during categorization.
 
 ## [0.1.16] - 2025-12-29
 

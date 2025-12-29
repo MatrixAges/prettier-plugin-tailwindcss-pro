@@ -134,7 +134,7 @@ let context = await esbuild.context({
   target: 'node14.21.3',
   external: ['prettier'],
   minify: process.argv.includes('--minify'),
-  entryPoints: [path.resolve(__dirname, './src/index.js')],
+  entryPoints: [path.resolve(__dirname, './src/index.ts')],
   outfile: path.resolve(__dirname, './dist/index.mjs'),
   format: 'esm',
   plugins: [patchRecast(), patchJiti(), patchCjsInterop(), inlineCssImports()],
