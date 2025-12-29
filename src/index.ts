@@ -11,7 +11,7 @@ import * as prettierParserBabel from 'prettier/plugins/babel'
 // @ts-ignore
 import * as recast from 'recast'
 import { getTailwindConfig } from './config.js'
-import { createMatcher, type Matcher } from './options.js'
+import { createMatcher, options, type Matcher } from './options.js'
 import { loadPlugins } from './plugins.js'
 import { sortClasses, sortClassList } from './sorting.js'
 import type { Customizations, StringChange, TransformerContext, TransformerEnv, TransformerMetadata } from './types'
@@ -194,6 +194,7 @@ function transformDynamicJsAttribute(attr: any, env: TransformerEnv) {
             start: concat?.name !== 'right',
             end: concat?.name !== 'left',
           },
+          column: path.node.loc?.start?.column,
         })
 
         if (sorted) {
@@ -230,6 +231,7 @@ function transformDynamicJsAttribute(attr: any, env: TransformerEnv) {
           start: concat?.name !== 'right',
           end: concat?.name !== 'left',
         },
+        column: path.node.loc?.start?.column,
       })
 
       if (sorted) {
@@ -257,6 +259,7 @@ function transformDynamicJsAttribute(attr: any, env: TransformerEnv) {
             start: concat?.name !== 'right',
             end: concat?.name !== 'left',
           },
+          column: path.node.loc?.start?.column,
         })
 
         if (sorted) {
@@ -464,16 +467,19 @@ function sortStringLiteral(
     env,
     removeDuplicates,
     collapseWhitespace = { start: true, end: true },
+    column,
   }: {
     env: TransformerEnv
     removeDuplicates?: false
     collapseWhitespace?: false | { start: boolean; end: boolean }
+    column?: number
   },
 ) {
   let result = sortClasses(node.value, {
     env,
     removeDuplicates,
     collapseWhitespace,
+    column: column ?? node.loc?.start?.column,
   })
 
   let didChange = result !== node.value
@@ -522,13 +528,16 @@ function sortTemplateLiteral(
     env,
     removeDuplicates,
     collapseWhitespace = { start: true, end: true },
+    column,
   }: {
     env: TransformerEnv
     removeDuplicates?: false
     collapseWhitespace?: false | { start: boolean; end: boolean }
+    column?: number
   },
 ) {
   let didChange = false
+  const nodeColumn = column ?? node.loc?.start?.column
 
   for (let i = 0; i < node.quasis.length; i++) {
     let quasi = node.quasis[i]
@@ -551,6 +560,7 @@ function sortTemplateLiteral(
         start: collapseWhitespace && collapseWhitespace.start && i === 0,
         end: collapseWhitespace && collapseWhitespace.end && i >= node.expressions.length,
       },
+      column: nodeColumn,
     })
 
     quasi.value.cooked = same
@@ -565,6 +575,7 @@ function sortTemplateLiteral(
             start: collapseWhitespace && collapseWhitespace.start && i === 0,
             end: collapseWhitespace && collapseWhitespace.end && i >= node.expressions.length,
           },
+          column: nodeColumn,
         })
 
     if (quasi.value.raw !== originalRaw || quasi.value.cooked !== originalCooked) {
@@ -664,17 +675,18 @@ function canCollapseWhitespaceIn(path: Path<import('@babel/types').Node, any>) {
 function transformJavaScript(ast: import('@babel/types').Node, { env }: TransformerContext) {
   let { matcher } = env
 
-  function sortInside(ast: import('@babel/types').Node) {
+  function sortInside(ast: import('@babel/types').Node, column?: number) {
     visit(ast, (node, path) => {
       let collapseWhitespace = canCollapseWhitespaceIn(path)
+      let nodeColumn = column ?? (node as any).loc?.start?.column
 
       if (isStringLiteral(node)) {
-        sortStringLiteral(node, { env, collapseWhitespace })
+        sortStringLiteral(node, { env, collapseWhitespace, column: nodeColumn })
       } else if (node.type === 'TemplateLiteral') {
-        sortTemplateLiteral(node, { env, collapseWhitespace })
+        sortTemplateLiteral(node, { env, collapseWhitespace, column: nodeColumn })
       } else if (node.type === 'TaggedTemplateExpression') {
         if (isSortableTemplateExpression(node, matcher)) {
-          sortTemplateLiteral(node.quasi, { env, collapseWhitespace })
+          sortTemplateLiteral(node.quasi, { env, collapseWhitespace, column: nodeColumn })
         }
       }
     })
@@ -699,9 +711,9 @@ function transformJavaScript(ast: import('@babel/types').Node, { env }: Transfor
       }
 
       if (isStringLiteral(node.value)) {
-        sortStringLiteral(node.value, { env })
+        sortStringLiteral(node.value, { env, column: node.loc?.start?.column })
       } else if (node.value.type === 'JSXExpressionContainer') {
-        sortInside(node.value)
+        sortInside(node.value, node.loc?.start?.column)
       }
     },
 
@@ -712,7 +724,7 @@ function transformJavaScript(ast: import('@babel/types').Node, { env }: Transfor
         return
       }
 
-      node.arguments.forEach((arg) => sortInside(arg))
+      node.arguments.forEach((arg) => sortInside(arg, node.loc?.start?.column))
     },
 
     TaggedTemplateExpression(node, path) {
@@ -727,6 +739,7 @@ function transformJavaScript(ast: import('@babel/types').Node, { env }: Transfor
       sortTemplateLiteral(node.quasi, {
         env,
         collapseWhitespace,
+        column: node.loc?.start?.column,
       })
     },
   })
@@ -1078,7 +1091,7 @@ function transformSvelte(ast: any, { env, changes }: TransformerContext) {
   }
 }
 
-export { options } from './options.js'
+export { options }
 
 export const printers: Record<string, Printer> = (function () {
   let printers: Record<string, Printer> = {}
@@ -1411,3 +1424,10 @@ export interface PluginOptions {
    */
   useTailwindFormatCategories?: string
 }
+
+export default {
+  parsers,
+  printers,
+  options,
+}
+
