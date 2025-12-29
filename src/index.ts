@@ -675,25 +675,68 @@ function canCollapseWhitespaceIn(path: Path<import('@babel/types').Node, any>) {
 function transformJavaScript(ast: import('@babel/types').Node, { env }: TransformerContext) {
   let { matcher } = env
 
-  function sortInside(ast: import('@babel/types').Node, column?: number) {
+  function getNestingDepth(path: any): number {
+    let depth = 0
+    let current = path
+    while (current) {
+      const node = current.node
+      if (node) {
+        if (
+          node.type === 'JSXElement' || 
+          node.type === 'JSXFragment' ||
+          node.type === 'BlockStatement' ||
+          node.type === 'ObjectExpression' ||
+          node.type === 'ArrayExpression' ||
+          node.type === 'ClassBody' ||
+          node.type === 'SwitchCase'
+        ) {
+          depth++
+        } else if (
+          node.type === 'ArrowFunctionExpression' &&
+          node.body.type !== 'BlockStatement'
+        ) {
+          // Implicit return arrow function body
+          depth++
+        } else if (
+          node.type === 'ConditionalExpression' ||
+          node.type === 'LogicalExpression'
+        ) {
+          // Nested expressions
+          depth++
+        } else if (node.type === 'ReturnStatement') {
+          depth++
+        }
+      }
+      current = current.parentPath
+    }
+    return depth
+  }
+
+  function sortInside(ast: import('@babel/types').Node, depth?: number) {
     visit(ast, (node, path) => {
       let collapseWhitespace = canCollapseWhitespaceIn(path)
-      let nodeColumn = column ?? (node as any).loc?.start?.column
+      // If depth is not provided, calculate it. 
+      // If we are recursing inside (depth is provided), we might need to adjust it based on current node type?
+      // Actually, sortInside is called for children. The 'depth' arg represents the base depth of the container.
+      // But we are visiting nodes inside. It's safer to re-calculate depth for each node to be precise, 
+      // OR pass the depth of the ExpressionContainer.
+      // Let's rely on getNestingDepth(path) for absolute correctness relative to root.
+      let nodeDepth = depth ?? getNestingDepth(path)
 
       if (isStringLiteral(node)) {
-        sortStringLiteral(node, { env, collapseWhitespace, column: nodeColumn })
+        sortStringLiteral(node, { env, collapseWhitespace, column: nodeDepth })
       } else if (node.type === 'TemplateLiteral') {
-        sortTemplateLiteral(node, { env, collapseWhitespace, column: nodeColumn })
+        sortTemplateLiteral(node, { env, collapseWhitespace, column: nodeDepth })
       } else if (node.type === 'TaggedTemplateExpression') {
         if (isSortableTemplateExpression(node, matcher)) {
-          sortTemplateLiteral(node.quasi, { env, collapseWhitespace, column: nodeColumn })
+          sortTemplateLiteral(node.quasi, { env, collapseWhitespace, column: nodeDepth })
         }
       }
     })
   }
 
   visit(ast, {
-    JSXAttribute(node) {
+    JSXAttribute(node, path) {
       node = node as import('@babel/types').JSXAttribute
 
       if (!node.value) {
@@ -710,21 +753,30 @@ function transformJavaScript(ast: import('@babel/types').Node, { env }: Transfor
         return
       }
 
+      // Logic: 
+      // JSXElement (level N) -> Attributes are at N+1.
+      // Multiline content inside attribute usually starts at N+2 (relative to element start).
+      // Or simply: indent = (depth + 1) * tabWidth.
+      // getNestingDepth includes the JSXElement itself. So depth is N+1 (if we count 1 for Element).
+      // If we use base depth of JSXElement, then attribute is +1 level deep.
+      const depth = getNestingDepth(path) + 1
+
       if (isStringLiteral(node.value)) {
-        sortStringLiteral(node.value, { env, column: node.loc?.start?.column })
+        sortStringLiteral(node.value, { env, column: depth })
       } else if (node.value.type === 'JSXExpressionContainer') {
-        sortInside(node.value, node.loc?.start?.column)
+        sortInside(node.value, depth)
       }
     },
 
-    CallExpression(node) {
+    CallExpression(node, path) {
       node = node as import('@babel/types').CallExpression
 
       if (!isSortableCallExpression(node, matcher)) {
         return
       }
 
-      node.arguments.forEach((arg) => sortInside(arg, node.loc?.start?.column))
+      const depth = getNestingDepth(path) + 1
+      node.arguments.forEach((arg) => sortInside(arg, depth))
     },
 
     TaggedTemplateExpression(node, path) {
@@ -735,11 +787,12 @@ function transformJavaScript(ast: import('@babel/types').Node, { env }: Transfor
       }
 
       let collapseWhitespace = canCollapseWhitespaceIn(path)
+      const depth = getNestingDepth(path) + 1
 
       sortTemplateLiteral(node.quasi, {
         env,
         collapseWhitespace,
-        column: node.loc?.start?.column,
+        column: depth,
       })
     },
   })

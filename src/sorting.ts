@@ -76,25 +76,13 @@ export function sortClasses(
         let closingIndent: string | undefined
 
         if (column !== undefined && column >= 0) {
-          let baseIndentUnits = column
+          const level = column
           if (useTabs) {
-            // If column is multiple of tabWidth, it likely comes from space-counting parsers
-            if (column >= tabWidth && column % tabWidth === 0) {
-              baseIndentUnits = column / tabWidth
-            }
+            indent = '\t'.repeat(level + 1)
+            closingIndent = useClosingIndent ? '\t'.repeat(level) : undefined
           } else {
-            // If column is small, it likely comes from tab-counting parsers (1 tab = 1 unit)
-            if (column > 0 && column < tabWidth) {
-              baseIndentUnits = column * tabWidth
-            }
-          }
-
-          if (useTabs) {
-            indent = '\t'.repeat(baseIndentUnits + 1)
-            closingIndent = useClosingIndent ? '\t'.repeat(baseIndentUnits) : undefined
-          } else {
-            indent = ' '.repeat(baseIndentUnits + tabWidth)
-            closingIndent = useClosingIndent ? ' '.repeat(baseIndentUnits) : undefined
+            indent = ' '.repeat((level + 1) * tabWidth)
+            closingIndent = useClosingIndent ? ' '.repeat(level * tabWidth) : undefined
           }
         } else {
           const baseIndent = useTabs ? '\t' : ' '.repeat(tabWidth)
@@ -135,23 +123,13 @@ export function sortClasses(
       let closingIndent: string | undefined
 
       if (column !== undefined && column >= 0) {
-        let baseIndentUnits = column
+        const level = column
         if (useTabs) {
-          if (column >= tabWidth && column % tabWidth === 0) {
-            baseIndentUnits = column / tabWidth
-          }
+          indent = '\t'.repeat(level + 1)
+          closingIndent = useClosingIndent ? '\t'.repeat(level) : undefined
         } else {
-          if (column > 0 && column < tabWidth) {
-            baseIndentUnits = column * tabWidth
-          }
-        }
-
-        if (useTabs) {
-          indent = '\t'.repeat(baseIndentUnits + 1)
-          closingIndent = useClosingIndent ? '\t'.repeat(baseIndentUnits) : undefined
-        } else {
-          indent = ' '.repeat(baseIndentUnits + tabWidth)
-          closingIndent = useClosingIndent ? ' '.repeat(baseIndentUnits) : undefined
+          indent = ' '.repeat((level + 1) * tabWidth)
+          closingIndent = useClosingIndent ? ' '.repeat(level * tabWidth) : undefined
         }
       } else {
         const indentMatch = classStr.match(/\n([ \t]+)/)
